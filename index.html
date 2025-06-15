@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker-bs5.min.css">
+
+  <title>Formulario de Registro con Firma</title>
+
+  <style>
+    /* Estilos Loader */
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      display: none;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .signature-pad-container {
+      position: relative;
+      width: 100%;
+      height: 150px;
+      border: 1px solid #ced4da;
+      border-radius: .25rem;
+      background-color: #fff;
+      overflow: hidden;
+    }
+
+    #signature-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: .25rem;
+      position: relative;
+      z-index: 1;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .signature-pad-container.is-invalid {
+      border-color: #dc3545;
+    }
+
+    .signature-label-inside {
+      position: absolute;
+      top: 5px;
+      left: 8px;
+      z-index: 5;
+      padding: 2px 5px;
+      font-size: 0.8em;
+      color: #6c757d;
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: .2rem;
+      pointer-events: none;
+    }
+
+    #clear-signature {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      z-index: 10;
+    }
+
+    .form-floating .invalid-feedback {
+      margin-top: 0.25rem;
+    }
+
+    .form-floating>.form-select {
+      height: calc(3.5rem + 2px);
+      line-height: 1.25;
+    }
+
+    .form-floating>label {
+      padding-top: 1rem;
+    }
+
+    #statusMessage .alert {
+      margin-bottom: 0;
+    }
+
+    #signature-feedback {
+      width: 100%;
+      margin-top: 0.25rem;
+      font-size: .875em;
+      color: #dc3545;
+      display: none;
+    }
+
+    .header-row {
+      align-items: stretch;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .booking-info-box {
+      border: 2px solid #198754;
+      border-radius: .25rem;
+      padding: 0.75rem 1rem;
+      background-color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-size: 0.9em;
+      line-height: 1.3;
+      min-height: calc(3.5rem + 2px);
+      height: 100%;
+      color: #006400;
+    }
+
+    .booking-info-box p {
+      margin-bottom: 0.15rem;
+      word-break: break-word;
+      white-space: normal;
+      font-weight: bold;
+    }
+
+    .booking-info-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .help-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 1.2em;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .help-button:hover {
+      transform: scale(1.05);
+      border-color: #007bff;
+    }
+
+    .language-buttons img {
+      height: 38px;
+      width: 55px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin: 0 1px;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .language-buttons img:hover {
+      transform: scale(1.05);
+      border-color: #007bff;
+    }
+
+    .language-buttons img.active-lang {
+      border-color: #007bff;
+      box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+    .btn-group .help-button:not(:last-child) {
+      margin-right: 2px;
+    }
+
+    #main-content-wrapper {
+      padding-top: 1px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main-content-wrapper" class="container mt-3">
+    <div class="row mb-4 header-row">
+      <div class="col-md-3 col-lg-2 logo-container">
+        <img src="<?!= logoUrl ?>" alt="Logo" class="img-fluid rounded">
+      </div>
+      <div class="col-md-5 col-lg-6 text-center d-flex flex-column justify-content-center">
+        <h1 class="mb-1" id="mainTitle">REGISTRO DE VIAJEROS</h1>
+        <p class="mb-2" id="subtitle">Solo mayores de 14 años. (*) datos obligatorios. Firme y Envie los datos.</p>
+
+        <div class="d-flex justify-content-center align-items-center flex-wrap mt-1">
+          <div class="language-buttons me-2" id="languageSelector">
+            <img src="https://flagcdn.com/es.svg" alt="Español" data-lang="es" class="active-lang">
+            <img src="https://flagcdn.com/gb.svg" alt="English" data-lang="en">
+            <img src="https://flagcdn.com/pt.svg" alt="Português" data-lang="pt">
+            <img src="https://flagcdn.com/fr.svg" alt="Français" data-lang="fr">
+            <img src="https://flagcdn.com/de.svg" alt="Deutsch" data-lang="de">
+          </div>
+
+          <div class="btn-group mt-2 mt-md-0" role="group" aria-label="Grupo de acciones">
+            <button class="btn btn-info help-button" type="button" id="helpButton" title="Ayuda">?</button>
+            <button class="btn btn-info help-button" type="button" id="fullscreenButton" title="Ver en Pantalla Completa">⛶</button>
+            
+            <button id="alojamientoButton" class="btn btn-info help-button" type="button" title="Ver alojamiento">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-house-fill" viewBox="0 0 16 16">
+                    <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L8.707 1.5Z"/>
+                    <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
+                </svg>
+            </button>
+
+            <!-- SOLUCIÓN: Revertido a un enlace <a> con el atributo 'target'. Esto es más robusto. -->
+            <a id="localizacionButton" class="btn btn-info help-button" href="https://www.google.com/maps/place/TurJal%C3%B3n+-+Apartamentos+Tur%C3%ADsticos/@41.3294993,-1.7939598,17z/data=!3m1!4b1!4m6!3m5!1s0xd5b8110205774e3:0xb81819529c6b8aee!8m2!3d41.3294993!4d-1.7939598!16s%2Fg%2F11r6hgnrdd?entry=ttu" target="ventanaLocalizacion" title="Ver localización">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-geo-alt-fill" viewBox="0 0 16 16">
+                    <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                </svg>
+            </a>
+
+            <button class="btn btn-info help-button" type="button" id="registrosButton" title="Ver Registros">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
+                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="col-md-4 col-lg-4">
+        <div class="booking-info-box">
+          <? if (clienteNombre && clienteNombre.trim() !== '') { ?>
+          <p><span id="clienteNombreLabel">Cliente:</span> <span id="displayClienteNombre"><?!= clienteNombre ?></span>
+          </p>
+          <? } ?>
+          <p id="reservaNumLabel">Nº Reserva: <span id="displayReservaNum"><?!= reservaNum ?></span>
+            <span id="reservaFechaLabel">realizada:</span> <span id="displayReservaFecha"><?!= reservaFecha ?></span>
+          </p>
+          <p id="entradaFechaLabel">Entrada: <span id="displayEntradaFecha"><?!= entradaFecha ?></span> <span
+              id="salidaFechaLabel">Salida:</span> <span id="displaySalidaFecha"><?!= salidaFecha ?></span>
+          </p>
+          <p id="apartamentoLabel">Apartamento: <span id="displayApartamento"><?!= apartamentoNum ?></span></p>
+        </div>
+      </div>
+    </div>
+
+    <form id="registroForm" class="needs-validation" novalidate>
+      <!-- ... -->
+      <div class="row g-2 mb-2">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Nombre" required><label for="nombre" id="labelNombre">Nombre (*)</label>
+            <div class="invalid-feedback" id="feedbackNombre">Introduce tu nombre.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="primerApellido" name="primerApellido" placeholder="Primer Apellido" required><label for="primerApellido" id="labelPrimerApellido">Primer Apellido (*)</label>
+            <div class="invalid-feedback" id="feedbackPrimerApellido">Introduce tu primer apellido.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="segundoApellido" name="segundoApellido" placeholder="Segundo Apellido"><label for="segundoApellido" id="labelSegundoApellido">Segundo Apellido (*)</label>
+          </div>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <select class="form-select" id="tipoDocumento" name="tipoDocumento" required><option selected disabled value="" id="optionSelectType">Selecciona... (*)</option><option value="DNI">DNI</option><option value="NIE">NIE</option><option value="Pasaporte">Pasaporte</option></select><label for="tipoDocumento" id="labelTipoDocumento">Tipo documento</label>
+            <div class="invalid-feedback" id="feedbackTipoDocumento">Selecciona tipo.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="numeroDocumento" name="numeroDocumento" placeholder="Número de documento" required><label for="numeroDocumento" id="labelNumeroDocumento">Número de documento (*)</label>
+            <div class="invalid-feedback" id="numeroDocumentoFeedback"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="numeroSoporte" name="numeroSoporte" placeholder="Número de Soporte" required><label for="numeroSoporte" id="labelNumeroSoporte">Número de soporte (*)</label>
+            <div class="invalid-feedback" id="feedbackNumeroSoporte">Introduce número de Soporte (NUM.SOPORTE:
+              ABC123456)</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="fechaNacimiento" name="fechaNacimiento" placeholder="dd/mm/aaaa" required><label for="fechaNacimiento" id="labelFechaNacimiento">Fecha nacimiento (*)</label>
+            <div class="invalid-feedback" id="feedbackFechaNacimiento">Formato dd/mm/aaaa.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="Teléfono" required><label for="telefono" id="labelTelefono">Teléfono (*)</label>
+            <div class="invalid-feedback" id="feedbackTelefono">Introduce un número de teléfono.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <select class="form-select" id="parentesco" name="parentesco" required> <option selected disabled value="" id="optionSelectParentesco">Selecciona... (*)</option> <option id="parentescoOption1" value="No hay menores de 14">No hay menores de 14</option> <option id="parentescoOption2" value="Padre/Madre">Padre/Madre</option> <option id="parentescoOption3" value="Hijo/Hija">Hijo/Hija</option> <option id="parentescoOption4" value="Cónyuge">Cónyuge</option> <option id="parentescoOption5" value="Hermano/Hermana">Hermano/Hermana</option> <option id="parentescoOption6" value="Otro">Otro</option> </select>
+            <label for="parentesco" id="labelParentesco">Parentesco (de menores de 14 años)</label>
+            <div class="invalid-feedback" id="feedbackParentesco">Selecciona el parentesco si aplica.</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Dirección (Calle, número, piso...)" required><label for="direccion" id="labelDireccion">Direccion (*)</label>
+            <div class="invalid-feedback" id="feedbackDireccion">Introduce tu dirección.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="direccionAdicional" name="direccionAdicional" placeholder="Dirección adicional (Bloque, urbanización...)"><label for="direccionAdicional" id="labelDireccionAdicional">Dirección adicional</label>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="pais" name="pais" placeholder="País" required><label for="pais" id="labelPais">País (*)</label>
+            <div class="invalid-feedback" id="feedbackPais">Introduce el país.</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="provincia" name="provincia" placeholder="Provincia" required><label for="provincia" id="labelProvincia">Provincia (*)</label>
+            <div class="invalid-feedback" id="feedbackProvincia">Introduce la provincia.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="municipio" name="municipio" placeholder="Municipio" required><label for="municipio" id="labelMunicipio">Municipio (*)</label>
+            <div class="invalid-feedback" id="feedbackMunicipio">Introduce el municipio.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="codigoPostal" name="codigoPostal" placeholder="Código Postal" required><label for="codigoPostal" id="labelCodigoPostal">Código Postal (*)</label>
+            <div class="invalid-feedback" id="feedbackCodigoPostal">Introduce el código postal.</div>
+          </div>
+        </div>
+      </div>
+      <div class="row mb-3 align-items-start">
+        <div class="col-md-8">
+          <div id="signature-pad-container" class="signature-pad-container">
+            <label class="signature-label-inside" id="labelFirma">Firma:</label><canvas
+              id="signature-canvas"></canvas><button type="button" class="btn btn-outline-secondary btn-sm" id="clear-signature">Limpiar</button>
+          </div>
+          <div id="signature-feedback" class="invalid-feedback" style="display: none;">Por favor, añade tu firma.</div>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary w-100" type="submit" id="submitButton">Enviar los Datos</button>
+          <div id="loader" class="loader mt-2"></div>
+          <div id="statusMessage" class="mt-2"></div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="helpModalLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="helpModalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="helpModalClose"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrosModal" tabindex="-1" aria-labelledby="registrosModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="registrosModalLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="registrosModalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="registrosModalClose"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker-full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/locales/es.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/locales/pt.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/locales/fr.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/locales/de.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- Variables de Elementos del DOM ---
+      const canvas = document.getElementById('signature-canvas');
+      const signaturePadContainer = document.getElementById('signature-pad-container');
+      const signatureFeedback = document.getElementById('signature-feedback');
+      const statusMessageDiv = document.getElementById('statusMessage');
+      const fullscreenButton = document.getElementById('fullscreenButton');
+      const tipoDocumentoSelect = document.getElementById('tipoDocumento');
+      const numeroDocumentoInput = document.getElementById('numeroDocumento');
+      const numeroDocumentoFeedback = document.getElementById('numeroDocumentoFeedback');
+      const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+      
+      // --- Variables de Estado ---
+      let signaturePad;
+      let datepicker = null;
+      let currentLanguage = 'es';
+      
+      const translations = {
+        es: { helpButtonTitle: "Ayuda", alojamientoButtonTitle: "Ver alojamiento", localizacionButtonTitle: "Ver localización", clienteNombreLabel: "Cliente:", mainTitle: "REGISTRO DE VIAJEROS", subtitle: "Solo mayores de 14 años. (*) datos obligatorios. Firme y Envie los datos.", fullscreenButton: "⛶", fullscreenExitButton: "↘", fullscreenTitle: "Ver en Pantalla Completa",fullscreenExitTitle: "Salir de Pantalla Completa", registrosButtonTitle: "Ver Registros", registrosModalTitle: "Viajeros Registrados", registrosModalBody: "Aún no hay viajeros registrados para esta reserva.", reservaNumLabel: "Nº Reserva:", reservaFechaLabel: "realizada:", entradaFechaLabel: "Entrada:", salidaFechaLabel: "Salida:", apartamentoLabel: "Apartamento:", labelNombre: "Nombre (*)", feedbackNombre: "Introduce tu nombre.", labelPrimerApellido: "Primer Apellido (*)", feedbackPrimerApellido: "Introduce tu primer apellido.", labelSegundoApellido: "Segundo Apellido (*)", labelTipoDocumento: "Tipo documento", optionSelectType: "Selecciona... (*)", feedbackTipoDocumento: "Selecciona tipo.", labelNumeroDocumento: "Número de documento (*)", feedbackNumeroDocumentoEmpty: "No puede quedar vacío.", feedbackNumeroDocumentoSelectType: "Selecciona un tipo de documento.", feedbackDNIIncorrectFormat: "Formato de DNI incorrecto (8 dígitos y una letra).", feedbackDNILetterIncorrect: "Formato de DNI (Ej: {dni_example}) o letra incorrecta ({current_letter} debería ser {expected_letter}).", labelNumeroSoporte: "Número de soporte (*)", feedbackNumeroSoporte: "Introduce número de Soporte (NUM.SOPORTE: ABC123456)", labelFechaNacimiento: "Fecha nacimiento (*)", feedbackFechaNacimiento: "Formato dd/mm/aaaa.", feedbackFechaNacimientoInvalid: "La fecha introducida no es válida.", feedbackFechaNacimientoTooYoung: "No válido para menores de 14 años.", labelTelefono: "Teléfono (*)", feedbackTelefono: "Introduce un número de teléfono.", labelParentesco: "Parentesco (de menores de 14 años)", optionSelectParentesco: "Selecciona... (*)", parentescoOption1: "No hay menores de 14", parentescoOption2: "Padre/Madre", parentescoOption3: "Hijo/Hija", parentescoOption4: "Cónyuge", parentescoOption5: "Hermano/Hermana", parentescoOption6: "Otro", feedbackParentesco: "Selecciona el parentesco si aplica.", labelDireccion: "Direccion (*)", feedbackDireccion: "Introduce tu dirección.", labelDireccionAdicional: "Dirección adicional", labelPais: "País (*)", feedbackPais: "Introduce el país.", labelProvincia: "Provincia (*)", feedbackProvincia: "Introduce la provincia.", labelMunicipio: "Municipio (*)", feedbackMunicipio: "Introduce el municipio.", labelCodigoPostal: "Código Postal (*)", feedbackCodigoPostal: "Introduce el código postal.", labelFirma: "Firma:", clearSignature: "Limpiar", signatureFeedback: "Por favor, añade tu firma.", submitButton: "Enviar los Datos", successMessage: "Datos enviados correctamente. ¡Gracias!", errorMessage: "Error: {error_message}", feedbackNIEInvalid: "Formato de NIE inválido. (Ej: X1234567B)", feedbackPassportInvalid: "Formato de Pasaporte no válido.", helpTitle: "Aviso de TurJalon", helpMessage: "En España, el Real Decreto 933/2021 obliga a las empresas de alojamiento a registrar los datos de sus huéspedes (sólo mayores de 14 años) y comunicarlos al Ministerio del Interior.<br><br>Cada huésped puede usar este formulario para comunicar sus datos y así evitará la molestia de hacerlo al llegar al alojamiento.<br><br>Puede reenviar este formulario al resto de huéspedes que le acompañan para que rellenen sus datos.<br><br>Si este procedimiento no le parece seguro, encontrarán fichas para rellenar manualmente cuando llegue al apartamento.", closeButton: "Entendido" },
+        en: { helpButtonTitle: "Help", alojamientoButtonTitle: "View accommodation", localizacionButtonTitle: "View location", clienteNombreLabel: "Client:", mainTitle: "TRAVELER REGISTRATION", subtitle: "Only for people over 14 years old. (*) mandatory fields. Sign and Send data.", fullscreenButton: "⛶", fullscreenExitButton: "↘",fullscreenTitle: "View in Full Screen", fullscreenExitTitle: "Exit Full Screen", registrosButtonTitle: "View Records", registrosModalTitle: "Registered Travelers", registrosModalBody: "No travelers have been registered for this booking yet.", reservaNumLabel: "Booking Nº:", reservaFechaLabel: "made:", entradaFechaLabel: "Check-in:", salidaFechaLabel: "Check-out:", apartamentoLabel: "Apartment:", labelNombre: "Name (*)", feedbackNombre: "Enter your name.", labelPrimerApellido: "First Surname (*)", feedbackPrimerApellido: "Enter your first surname.", labelSegundoApellido: "Second Surname (*)", labelTipoDocumento: "Document type", optionSelectType: "Select... (*)", feedbackTipoDocumento: "Select type.", labelNumeroDocumento: "Document number (*)", feedbackNumeroDocumentoEmpty: "Cannot be empty.", feedbackNumeroDocumentoSelectType: "Select a document type.", feedbackDNIIncorrectFormat: "Incorrect DNI format (8 digits and one letter).", feedbackDNILetterIncorrect: "DNI format (e.g.: {dni_example}) or incorrect letter ({current_letter} should be {expected_letter}).", labelNumeroSoporte: "Support number (*)", feedbackNumeroSoporte: "Enter Support number (NUM.SOPORTE: ABC123456)", labelFechaNacimiento: "Date of birth (*)", feedbackFechaNacimiento: "Format dd/mm/yyyy.", feedbackFechaNacimientoInvalid: "The entered date is not valid.", feedbackFechaNacimientoTooYoung: "Not valid for minors under 14 years old.", labelTelefono: "Phone (*)", feedbackTelefono: "Enter a phone number.", labelParentesco: "Relationship (of minors under 14)", optionSelectParentesco: "Select... (*)", parentescoOption1: "No minors under 14", parentescoOption2: "Father/Mother", parentescoOption3: "Son/Daughter", parentescoOption4: "Spouse", parentescoOption5: "Brother/Sister", parentescoOption6: "Other", feedbackParentesco: "Select relationship if applicable.", labelDireccion: "Address (*)", feedbackDireccion: "Enter your address.", labelDireccionAdicional: "Additional address", labelPais: "Country (*)", feedbackPais: "Enter the country.", labelProvincia: "Province (*)", feedbackProvincia: "Enter the province.", labelMunicipio: "Municipality (*)", feedbackMunicipio: "Enter the municipality.", labelCodigoPostal: "Postal Code (*)", feedbackCodigoPostal: "Enter the postal code.", labelFirma: "Signature:", clearSignature: "Clear", signatureFeedback: "Please add your signature.", submitButton: "Send Data", successMessage: "Data sent successfully. Thank you!", errorMessage: "Error: {error_message}", feedbackNIEInvalid: "Invalid NIE format. (e.g.: X1234567B)", feedbackPassportInvalid: "Invalid Passport format.", helpTitle: "TurJalon Notice", helpMessage: "In Spain, Royal Decree 933/2021 requires accommodation companies to register data of their guests (only those over 14 years old) and communicate it to the Ministry of the Interior.<br><br>Each guest can use this form to communicate their data and thus avoid the inconvenience of doing so upon arrival at the accommodation.<br><br>You can forward this form to the other guests accompanying you so they can fill in their data.<br><br>If this procedure does not seem secure to you, you will find forms to fill out manually when you arrive at the apartment.", closeButton: "Understood"},
+        pt: { helpButtonTitle: "Ajuda", alojamientoButtonTitle: "Ver alojamento", localizacionButtonTitle: "Ver localização", clienteNombreLabel: "Cliente:", mainTitle: "REGISTRO DE VIAJANTES", subtitle: "Apenas para maiores de 14 anos. (*) dados obrigatórios. Assine e Envie os dados.", fullscreenButton: "⛶", fullscreenExitButton: "↘",fullscreenTitle: "Ver em Ecrã Completo", fullscreenExitTitle: "Sair do Ecrã Completo", registrosButtonTitle: "Ver Registos", registrosModalTitle: "Viajantes Registados", registrosModalBody: "Ainda não há viajantes registrados para esta reserva.", reservaNumLabel: "Nº Reserva:", reservaFechaLabel: "realizada:", entradaFechaLabel: "Entrada:", salidaFechaLabel: "Saída:", apartamentoLabel: "Apartamento:", labelNombre: "Nome (*)", feedbackNombre: "Introduza o seu nome.", labelPrimerApellido: "Primeiro Apelido (*)", feedbackPrimerApellido: "Introduza o seu primeiro apelido.", labelSegundoApellido: "Segundo Apelido (*)", labelTipoDocumento: "Tipo de documento", optionSelectType: "Selecione... (*)", feedbackTipoDocumento: "Selecione tipo.", labelNumeroDocumento: "Número de documento (*)", feedbackNumeroDocumentoEmpty: "Não pode ficar vazio.", feedbackNumeroDocumentoSelectType: "Selecione um tipo de documento.", feedbackDNIIncorrectFormat: "Formato de DNI incorreto (8 dígitos e uma letra).", feedbackDNILetterIncorrect: "Formato de DNI (Ex: {dni_example}) ou letra incorreta ({current_letter} deveria ser {expected_letter}).", labelNumeroSoporte: "Número de suporte (*)", feedbackNumeroSoporte: "Introduza o número de Suporte (NUM.SUPORTE: ABC123456)", labelFechaNacimiento: "Data de nascimento (*)", feedbackFechaNacimiento: "Formato dd/mm/aaaa.", feedbackFechaNacimientoInvalid: "A data inserida não é válida.", feedbackFechaNacimientoTooYoung: "Não é válido para menores de 14 anos.", labelTelefono: "Telefone (*)", feedbackTelefono: "Introduza um número de telefone.", labelParentesco: "Parentesco (de menores de 14 anos)", optionSelectParentesco: "Selecione... (*)", parentescoOption1: "Não há menores de 14", parentescoOption2: "Pai/Mãe", parentescoOption3: "Filho/Filha", parentescoOption4: "Cônjuge", parentescoOption5: "Irmão/Irmã", parentescoOption6: "Outro", feedbackParentesco: "Selecione o parentesco se aplicável.", labelDireccion: "Morada (*)", feedbackDireccion: "Introduza a sua morada.", labelDireccionAdicional: "Morada adicional", labelPais: "País (*)", feedbackPais: "Introduza o país.", labelProvincia: "Província (*)", feedbackProvincia: "Introduza a província.", labelMunicipio: "Município (*)", feedbackMunicipio: "Introduza o município.", labelCodigoPostal: "Código Postal (*)", feedbackCodigoPostal: "Introduza o código postal.", labelFirma: "Assinatura:", clearSignature: "Limpar", signatureFeedback: "Por favor, adicione a sua assinatura.", submitButton: "Enviar Dados", successMessage: "Dados enviados com sucesso. Obrigado!", errorMessage: "Erro: {error_message}", feedbackNIEInvalid: "Formato de NIE inválido. (Ex: X1234567B)", feedbackPassportInvalid: "Formato de Passaporte inválido.", helpTitle: "Aviso da TurJalon", helpMessage: "Em Espanha, o Real Decreto 933/2021 obriga as empresas de alojamento a registar os dados dos seus hóspedes (apenas maiores de 14 anos) e comunicá-los ao Ministério do Interior.<br><br>Cada hóspede pode usar este formulário para comunicar os seus dados e assim evitar o incómodo de o fazer ao chegar ao alojamento.<br><br>Pode reenviar este formulário aos restantes hóspedes que o acompanham para que preencham os seus dados.<br><br>Se este procedimento não lhe parecer seguro, encontrará fichas para preencher manualmente quando chegar ao apartamento.", closeButton: "Compreendido"},
+        fr: { helpButtonTitle: "Aide", alojamientoButtonTitle: "Voir l'hébergement", localizacionButtonTitle: "Voir l'emplacement", clienteNombreLabel: "Client:", mainTitle: "REGISTRE VOYAGEURS", subtitle: "+14 ans. (*) Données obligatoires. Signer & Envoyer..", fullscreenButton: "⛶", fullscreenExitButton: "↘", fullscreenTitle: "Afficher en plein écran", fullscreenExitTitle: "Quitter le plein écran", registrosButtonTitle: "Voir les Enregistrements", registrosModalTitle: "Voyageurs Enregistrés", registrosModalBody: "Aucun voyageur n'a encore été enregistré pour cette réservation.", reservaNumLabel: "N° Réservation:", reservaFechaLabel: "effectuée:", entradaFechaLabel: "Arrivée:", salidaFechaLabel: "Départ:", apartamentoLabel: "Appartement:", labelNombre: "Nom (*)", feedbackNombre: "Entrez votre nom.", labelPrimerApellido: "Premier Nom de famille (*)", feedbackPrimerApellido: "Entrez votre premier nom de famille.", labelSegundoApellido: "Deuxième Nom de famille (*)", labelTipoDocumento: "Type de document", optionSelectType: "Sélectionnez... (*)", feedbackTipoDocumento: "Sélectionnez le type.", labelNumeroDocumento: "Numéro de document (*)", feedbackNumeroDocumentoEmpty: "Ne peut pas être vide.", feedbackNumeroDocumentoSelectType: "Sélectionnez un type de document.", feedbackDNIIncorrectFormat: "Format DNI incorrect (8 chiffres et une lettre).", feedbackDNILetterIncorrect: "Format DNI (Ex: {dni_example}) ou lettre incorrecte ({current_letter} deveria être {expected_letter}).", labelNumeroSoporte: "Numéro de support (*)", feedbackNumeroSoporte: "Entrez le numéro de Support (NUM.SUPPORT: ABC123456)", labelFechaNacimiento: "Date de naissance (*)", feedbackFechaNacimiento: "Format jj/mm/aaaa.", feedbackFechaNacimientoInvalid: "La date saisie n'est pas valide.", feedbackFechaNacimientoTooYoung: "Non valide pour les mineurs de moins de 14 ans.", labelTelefono: "Téléphone (*)", feedbackTelefono: "Entrez un numéro de téléphone.", labelParentesco: "Parenté (des mineurs de moins de 14 ans)", optionSelectParentesco: "Sélectionnez... (*)", parentescoOption1: "Pas de mineurs de moins de 14 ans", parentescoOption2: "Père/Mère", parentescoOption3: "Fils/Fille", parentescoOption4: "Conjoint(e)", parentescoOption5: "Frère/Sœur", parentescoOption6: "Autre", feedbackParentesco: "Sélectionnez la parenté si applicable.", labelDireccion: "Adresse (*)", feedbackDireccion: "Entrez votre adresse.", labelDireccionAdicional: "Adresse additionnelle", labelPais: "Pays (*)", feedbackPais: "Entrez le pays.", labelProvincia: "Province (*)", feedbackProvincia: "Entrez la province.", labelMunicipio: "Municipalité (*)", feedbackMunicipio: "Entrez la municipalité.", labelCodigoPostal: "Code Postal (*)", feedbackCodigoPostal: "Entrez le code postal.", labelFirma: "Signature:", clearSignature: "Effacer", signatureFeedback: "Veuillez ajouter votre signature.", submitButton: "Envoyer les Données", successMessage: "Données envoyées avec succès. Merci !", errorMessage: "Erreur: {error_message}", feedbackNIEInvalid: "Format NIE invalide. (Ex: X1234567B)", feedbackPassportInvalid: "Format Passeport invalide.", helpTitle: "Avis de TurJalon", helpMessage: "En Espagne, le décret royal 933/2021 oblige les entreprises d'hébergement à enregistrer les données de leurs clients (seulement ceux de plus de 14 ans) et à les communiquer au ministère de l'Intérieur.<br><br>Chaque client peut utiliser ce formulaire pour communiquer ses données et ainsi éviter la gêne de le faire à son arrivée à l'hébergement.<br><br>Vous pouvez transférer ce formulaire aux autres clients qui vous accompagnent afin qu'ils remplissent leurs données.<br><br>Si cette procédure ne vous semble pas sûre, vous trouverez des fiches à remplir manuellement à votre arrivée à l'appartement.", closeButton: "Compris"},
+        de: { helpButtonTitle: "Hilfe", alojamientoButtonTitle: "Unterkunft ansehen", localizacionButtonTitle: "Standort anzeigen", clienteNombreLabel: "Kunde:", mainTitle: "REISENDENREGISTRIERUNG", subtitle: "Nur für Personen über 14 Jahre. (*) Pflichtfelder. Unterschreiben und Daten senden.", fullscreenButton: "⛶", fullscreenExitButton: "↘", fullscreenTitle: "Im Vollbildmodus anzeigen", fullscreenExitTitle: "Vollbildmodus beenden", registrosButtonTitle: "Datensätze anzeigen", registrosModalTitle: "Registrierte Reisende", registrosModalBody: "Für diese Buchung wurden noch keine Reisenden registriert.", reservaNumLabel: "Reservierungsnr.:", reservaFechaLabel: "erstellt:", entradaFechaLabel: "Anreise:", salidaFechaLabel: "Abreise:", apartamentoLabel: "Wohnung:", labelNombre: "Name (*)", feedbackNombre: "Geben Sie Ihren Namen ein.", labelPrimerApellido: "Nachname (*)", feedbackPrimerApellido: "Geben Sie Ihren Nachnamen ein.", labelSegundoApellido: "Zweiter Nachname (*)", labelTipoDocumento: "Dokumententyp", optionSelectType: "Auswählen... (*)", feedbackTipoDocumento: "Typ auswählen.", labelNumeroDocumento: "Dokumentennummer (*)", feedbackNumeroDocumentoEmpty: "Darf nicht leer sein.", feedbackNumeroDocumentoSelectType: "Bitte wählen Sie einen Dokumententyp aus.", feedbackDNIIncorrectFormat: "Falsches DNI-Format (8 Ziffern und ein Buchstabe).", feedbackDNILetterIncorrect: "DNI-Format (z.B.: {dni_example}) oder falscher Buchstabe ({current_letter} sollte {expected_letter} sein).", labelNumeroSoporte: "Support-Nummer (*)", feedbackNumeroSoporte: "Geben Sie die Support-Nummer ein (NUM.SUPPORT: ABC123456)", labelFechaNacimiento: "Geburtsdatum (*)", feedbackFechaNacimiento: "Format tt.mm.jjjj.", feedbackFechaNacimientoInvalid: "Das eingegebene Datum ist ungültig.", feedbackFechaNacimientoTooYoung: "Nicht gültig für Minderjährige unter 14 Jahren.", labelTelefono: "Telefon (*)", feedbackTelefono: "Geben Sie eine Telefonnummer ein.", labelParentesco: "Verwandtschaft (von Minderjährigen unter 14 Jahren)", optionSelectParentesco: "Auswählen... (*)", parentescoOption1: "Keine Minderjährigen unter 14", parentescoOption2: "Vater/Mutter", parentescoOption3: "Sohn/Tochter", parentescoOption4: "Ehepartner(in)", parentescoOption5: "Bruder/Schwester", parentescoOption6: "Andere", feedbackParentesco: "Wählen Sie die Verwandtschaft, falls zutreffend.", labelDireccion: "Adresse (*)", feedbackDireccion: "Geben Sie Ihre Adresse ein.", labelDireccionAdicional: "Zusätzliche Adresse", labelPais: "Land (*)", feedbackPais: "Geben Sie das Land ein.", labelProvincia: "Provinz (*)", feedbackProvincia: "Geben Sie die Provinz ein.", labelMunicipio: "Gemeinde (*)", feedbackMunicipio: "Geben Sie die Gemeinde ein.", labelCodigoPostal: "Postleitzahl (*)", feedbackCodigoPostal: "Geben Sie die Postleitzahl ein.", labelFirma: "Unterschrift:", clearSignature: "Löschen", signatureFeedback: "Bitte fügen Sie Ihre Unterschrift hinzu.", submitButton: "Daten senden", successMessage: "Daten erfolgreich gesendet. Vielen Dank!", errorMessage: "Fehler: {error_message}", feedbackNIEInvalid: "Ungültiges NIE-Format. (z.B.: X1234567B)", feedbackPassportInvalid: "Ungültiges Passformat.", helpTitle: "Hinweis von TurJalon", helpMessage: "In Spanien schreibt das Königliche Dekret 933/2021 vor, dass Unterkünfte die Daten ihrer Gäste (nur über 14 Jahre) registrieren und dem Innenministerium melden müssen.<br><br>Jeder Gast kann dieses Formular verwenden, um seine Daten zu übermitteln und sich so die Unannehmlichkeit zu ersparen, dies bei der Ankunft in der Unterkunft tun zu müssen.<br><br>Sie können dieses Formular an die anderen Gäste weiterleiten, die Sie begleiten, damit diese ihre Daten ausfüllen.<br><br>Wenn Ihnen dieses Verfahren nicht sicher erscheint, finden Sie bei Ihrer Ankunft in der Wohnung Formulare zum manuellen Ausfüllen.", closeButton: "Verstanden"}
+      };
+
+      const initializeDatepicker = (lang) => { if (datepicker) datepicker.destroy(); datepicker = new Datepicker(fechaNacimientoInput, { buttonClass: 'btn', format: 'dd/mm/yyyy', language: lang, autohide: true, todayHighlight: true, }); };
+
+      const updateContent = (lang) => {
+        const t = translations[lang] || translations.es;
+        currentLanguage = lang;
+        
+        const clienteLabelElement = document.getElementById('clienteNombreLabel');
+        if (clienteLabelElement) {
+          clienteLabelElement.textContent = t.clienteNombreLabel;
+        }
+
+        document.getElementById('mainTitle').textContent = t.mainTitle;
+        document.getElementById('subtitle').textContent = t.subtitle;
+        document.getElementById('helpButton').title = t.helpButtonTitle;
+        document.getElementById('fullscreenButton').textContent = document.fullscreenElement ? t.fullscreenExitButton : t.fullscreenButton;
+        
+        document.getElementById('alojamientoButton').title = t.alojamientoButtonTitle;
+        document.getElementById('localizacionButton').title = t.localizacionButtonTitle;
+        document.getElementById('registrosButton').title = t.registrosButtonTitle;
+        
+        document.getElementById('reservaNumLabel').childNodes[0].nodeValue = t.reservaNumLabel + ' ';
+        document.getElementById('reservaFechaLabel').textContent = t.reservaFechaLabel;
+        document.getElementById('entradaFechaLabel').childNodes[0].nodeValue = t.entradaFechaLabel + ' ';
+        document.getElementById('salidaFechaLabel').textContent = t.salidaFechaLabel;
+        document.getElementById('apartamentoLabel').childNodes[0].nodeValue = t.apartamentoLabel + ' ';
+        document.getElementById('labelNombre').textContent = t.labelNombre;
+        document.getElementById('feedbackNombre').textContent = t.feedbackNombre;
+        document.getElementById('labelPrimerApellido').textContent = t.labelPrimerApellido;
+        document.getElementById('feedbackPrimerApellido').textContent = t.feedbackPrimerApellido;
+        document.getElementById('labelSegundoApellido').textContent = t.labelSegundoApellido;
+        document.getElementById('labelTipoDocumento').textContent = t.labelTipoDocumento;
+        document.getElementById('optionSelectType').textContent = t.optionSelectType;
+        document.getElementById('feedbackTipoDocumento').textContent = t.feedbackTipoDocumento;
+        document.getElementById('labelNumeroDocumento').textContent = t.labelNumeroDocumento;
+        document.getElementById('labelNumeroSoporte').textContent = t.labelNumeroSoporte;
+        document.getElementById('feedbackNumeroSoporte').textContent = t.feedbackNumeroSoporte;
+        document.getElementById('labelFechaNacimiento').textContent = t.labelFechaNacimiento;
+        document.getElementById('feedbackFechaNacimiento').textContent = t.feedbackFechaNacimiento;
+        document.getElementById('labelTelefono').textContent = t.labelTelefono;
+        document.getElementById('feedbackTelefono').textContent = t.feedbackTelefono;
+        document.getElementById('labelParentesco').textContent = t.labelParentesco;
+        document.getElementById('optionSelectParentesco').textContent = t.optionSelectParentesco;
+        document.getElementById('parentescoOption1').textContent = t.parentescoOption1;
+        document.getElementById('parentescoOption2').textContent = t.parentescoOption2;
+        document.getElementById('parentescoOption3').textContent = t.parentescoOption3;
+        document.getElementById('parentescoOption4').textContent = t.parentescoOption4;
+        document.getElementById('parentescoOption5').textContent = t.parentescoOption5;
+        document.getElementById('parentescoOption6').textContent = t.parentescoOption6;
+        document.getElementById('feedbackParentesco').textContent = t.feedbackParentesco;
+        document.getElementById('labelDireccion').textContent = t.labelDireccion;
+        document.getElementById('feedbackDireccion').textContent = t.feedbackDireccion;
+        document.getElementById('labelDireccionAdicional').textContent = t.labelDireccionAdicional;
+        document.getElementById('labelPais').textContent = t.labelPais;
+        document.getElementById('feedbackPais').textContent = t.feedbackPais;
+        document.getElementById('labelProvincia').textContent = t.labelProvincia;
+        document.getElementById('feedbackProvincia').textContent = t.feedbackProvincia;
+        document.getElementById('labelMunicipio').textContent = t.labelMunicipio;
+        document.getElementById('feedbackMunicipio').textContent = t.feedbackMunicipio;
+        document.getElementById('labelCodigoPostal').textContent = t.labelCodigoPostal;
+        document.getElementById('feedbackCodigoPostal').textContent = t.feedbackCodigoPostal;
+        document.getElementById('labelFirma').textContent = t.labelFirma;
+        document.getElementById('clear-signature').textContent = t.clearSignature;
+        document.getElementById('signature-feedback').textContent = t.signatureFeedback;
+        document.getElementById('submitButton').textContent = t.submitButton;
+        
+        initializeDatepicker(lang); 
+        applyDocumentNumberValidation();
+        validateDateOfBirth();
+        
+        document.querySelectorAll('.language-buttons img').forEach(img => {
+          img.classList.toggle('active-lang', img.dataset.lang === lang);
+        });
+      };
+
+      const resizeCanvas = () => { const ratio = Math.max(window.devicePixelRatio || 1, 1); const data = signaturePad && !signaturePad.isEmpty() ? signaturePad.toData() : null; if (canvas && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) { canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio; const ctx = canvas.getContext("2d"); if (ctx) ctx.scale(ratio, ratio); if (data && canvas.width > 0 && canvas.height > 0) { setTimeout(() => { signaturePad.fromData(data); }, 0); } else if (signaturePad) { signaturePad.clear(); } } };
+      const validarDNI = (dni) => { const letras = 'TRWAGMYFPDXBNJZSQVHLCKE'; dni = dni.toUpperCase(); if (!/^\d{8}[A-Z]$/.test(dni)) return { isValid: false, messageKey: 'feedbackDNIIncorrectFormat' }; const numero = parseInt(dni.substring(0, 8), 10); const letraControl = dni.charAt(8); const letraCalculada = letras.charAt(numero % 23); if (letraCalculada === letraControl) return { isValid: true }; return { isValid: false, messageKey: 'feedbackDNILetterIncorrect', messageArgs: { dni_example: dni.substring(0, 8) + letraCalculada, current_letter: letraControl, expected_letter: letraCalculada } }; };
+      const validarNIE = (nie) => /^[XYZ]\d{7}[A-Z]$/i.test(nie.toUpperCase());
+      const applyDocumentNumberValidation = () => { const selectedType = tipoDocumentoSelect.value; const numeroDocValue = numeroDocumentoInput.value.trim(); let isValid = true, feedbackMessage = '', messageKey = '', messageArgs = {}; const t = translations[currentLanguage] || translations.es; if (selectedType === '' && numeroDocValue === '') { numeroDocumentoInput.classList.remove('is-invalid', 'is-valid'); numeroDocumentoInput.setCustomValidity(''); numeroDocumentoFeedback.textContent = ''; return; } else if (selectedType === '') { isValid = false; messageKey = 'feedbackNumeroDocumentoSelectType'; } else if (numeroDocValue === '') { isValid = false; messageKey = 'feedbackNumeroDocumentoEmpty'; } else if (selectedType === 'DNI') { const res = validarDNI(numeroDocValue); if (!res.isValid) { isValid = false; messageKey = res.messageKey; messageArgs = res.messageArgs; } } else if (selectedType === 'NIE') { if (!validarNIE(numeroDocValue)) { isValid = false; messageKey = 'feedbackNIEInvalid'; } } else if (selectedType === 'Pasaporte') { if (!/^[A-Z0-9]{6,15}$/i.test(numeroDocValue)) { isValid = false; messageKey = 'feedbackPassportInvalid'; } } if (messageKey && t[messageKey]) { feedbackMessage = t[messageKey]; if (messageArgs) for (const key in messageArgs) feedbackMessage = feedbackMessage.replace(`{${key}}`, messageArgs[key]); } numeroDocumentoInput.setCustomValidity(isValid ? '' : feedbackMessage); numeroDocumentoFeedback.textContent = feedbackMessage; numeroDocumentoInput.classList.toggle('is-invalid', !isValid); numeroDocumentoInput.classList.toggle('is-valid', isValid); };
+      const validateDateOfBirth = () => { const fechaValue = fechaNacimientoInput.value.trim(); const feedbackEl = document.getElementById('feedbackFechaNacimiento'); const t = translations[currentLanguage] || translations.es; let isValid = true, feedbackMessage = t.feedbackFechaNacimiento; if (fechaValue === '') { fechaNacimientoInput.setCustomValidity(''); feedbackEl.textContent = feedbackMessage; return; } const parts = fechaValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if (!parts) { isValid = false; feedbackMessage = t.feedbackFechaNacimientoInvalid; } else { const day = parseInt(parts[1], 10), month = parseInt(parts[2], 10), year = parseInt(parts[3], 10); const dob = new Date(year, month - 1, day); if (dob.getFullYear() !== year || dob.getMonth() !== month - 1 || dob.getDate() !== day) { isValid = false; feedbackMessage = t.feedbackFechaNacimientoInvalid; } else { const fourteenYearsAgo = new Date(); fourteenYearsAgo.setFullYear(fourteenYearsAgo.getFullYear() - 14); if (dob > fourteenYearsAgo) { isValid = false; feedbackMessage = t.feedbackFechaNacimientoTooYoung; } } } fechaNacimientoInput.setCustomValidity(isValid ? '' : feedbackMessage); feedbackEl.textContent = feedbackMessage; fechaNacimientoInput.classList.toggle('is-invalid', !isValid); };
+
+      // --- Inicialización ---
+      signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+      resizeCanvas();
+      updateContent(currentLanguage);
+
+      // --- Asignación de Eventos (Event Listeners) ---
+      document.getElementById('languageSelector').addEventListener('click', (event) => { if (event.target.tagName === 'IMG' && event.target.dataset.lang) { updateContent(event.target.dataset.lang); } });
+      const formFields = document.querySelectorAll('#registroForm input, #registroForm select, #registroForm textarea');
+      formFields.forEach(field => { field.addEventListener('input', () => { if (statusMessageDiv.innerHTML !== '') statusMessageDiv.innerHTML = ''; }); });
+      signaturePad.addEventListener('beginStroke', () => { if (statusMessageDiv.innerHTML !== '') statusMessageDiv.innerHTML = ''; signaturePadContainer.classList.remove('is-invalid'); signatureFeedback.style.display = 'none'; });
+      fechaNacimientoInput.addEventListener('change', validateDateOfBirth);
+      tipoDocumentoSelect.addEventListener('change', () => { if (numeroDocumentoInput.value.trim() !== '' || tipoDocumentoSelect.classList.contains('was-validated') || numeroDocumentoInput.classList.contains('is-invalid')) { applyDocumentNumberValidation(); } else { numeroDocumentoInput.classList.remove('is-invalid', 'is-valid'); numeroDocumentoInput.setCustomValidity(''); numeroDocumentoFeedback.textContent = ''; } if (statusMessageDiv.innerHTML !== '') statusMessageDiv.innerHTML = ''; });
+      numeroDocumentoInput.addEventListener('input', () => { applyDocumentNumberValidation(); if (statusMessageDiv.innerHTML !== '') statusMessageDiv.innerHTML = ''; });
+      window.addEventListener("resize", resizeCanvas);
+      document.getElementById('clear-signature').addEventListener('click', () => { if (signaturePad) signaturePad.clear(); signaturePadContainer.classList.remove('is-invalid'); signatureFeedback.style.display = 'none'; if (statusMessageDiv.innerHTML !== '') statusMessageDiv.innerHTML = ''; });
+      document.getElementById('registroForm').addEventListener('submit', (event) => {
+        event.preventDefault(); const form = event.target; applyDocumentNumberValidation(); validateDateOfBirth(); const isSignatureEmpty = signaturePad.isEmpty(); signaturePadContainer.classList.toggle('is-invalid', isSignatureEmpty); signatureFeedback.style.display = isSignatureEmpty ? 'block' : 'none'; if (!form.checkValidity() || isSignatureEmpty) { form.classList.add('was-validated'); return; }
+        document.getElementById('loader').style.display = 'block'; document.getElementById('submitButton').disabled = true; statusMessageDiv.innerHTML = ''; const formData = Object.fromEntries(new FormData(form).entries()); formData.nReserva = document.getElementById('displayReservaNum').textContent.trim(); formData.signatureData = signaturePad.toDataURL('image/png');
+        google.script.run.withSuccessHandler((response) => { statusMessageDiv.innerHTML = `<div class="alert alert-success" role="alert">${(translations[currentLanguage] || translations.es).successMessage}</div>`; form.reset(); if (signaturePad) signaturePad.clear(); form.classList.remove('was-validated'); signaturePadContainer.classList.remove('is-invalid'); signatureFeedback.style.display = 'none'; numeroDocumentoInput.classList.remove('is-valid', 'is-invalid'); fechaNacimientoInput.classList.remove('is-valid', 'is-invalid'); document.getElementById('loader').style.display = 'none'; document.getElementById('submitButton').disabled = false; }).withFailureHandler((error) => { statusMessageDiv.innerHTML = `<div class="alert alert-danger" role="alert">${(translations[currentLanguage] || translations.es).errorMessage.replace('{error_message}', error.message)}</div>`; document.getElementById('loader').style.display = 'none'; document.getElementById('submitButton').disabled = false; }).procesarFormulario(formData);
+      });
+      const openFullscreen = (elem) => { if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } };
+      const closeFullscreen = () => { if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } };
+      const updateFullscreenButton = () => {
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+        const t = translations[currentLanguage] || translations.es;
+        fullscreenButton.textContent = isFullscreen ? t.fullscreenExitButton : t.fullscreenButton;
+        fullscreenButton.title = isFullscreen ? t.fullscreenExitTitle : t.fullscreenTitle;
+        fullscreenButton.classList.toggle('btn-secondary', isFullscreen);
+        fullscreenButton.classList.toggle('btn-info', !isFullscreen);
+      };
+      fullscreenButton.addEventListener('click', () => { if (!document.fullscreenElement) { openFullscreen(document.documentElement); } else { closeFullscreen(); } });
+      ['fullscreenchange', 'webkitfullscreenchange'].forEach(event => document.addEventListener(event, updateFullscreenButton));
+      document.getElementById('helpButton').addEventListener('click', () => {
+        const t = translations[currentLanguage] || translations.es;
+        document.getElementById('helpModalLabel').textContent = t.helpTitle;
+        document.getElementById('helpModalBody').innerHTML = t.helpMessage;
+        document.getElementById('helpModalClose').textContent = t.closeButton;
+        new bootstrap.Modal(document.getElementById('helpModal')).show();
+      });
+
+      document.getElementById('alojamientoButton').addEventListener('click', () => {
+        const urlAlojamiento = 'https://www.booking.com/hotel/es/turjalon.es.html';         
+        const windowName = 'ventanaAlojamiento';
+        window.open(urlAlojamiento, windowName);
+      });
+
+      // SOLUCIÓN: El botón de localización ya no necesita un event listener de JavaScript.
+      // Su comportamiento está definido por los atributos href y target en el HTML.
+      
+      document.getElementById('registrosButton').addEventListener('click', () => {
+        const t = translations[currentLanguage] || translations.es;
+        const nReserva = document.getElementById('displayReservaNum').textContent.trim();
+        
+        const modalTitle = document.getElementById('registrosModalLabel');
+        const modalBody = document.getElementById('registrosModalBody');
+        const modalCloseButton = document.getElementById('registrosModalClose');
+        const modalInstance = new bootstrap.Modal(document.getElementById('registrosModal'));
+
+        modalTitle.textContent = t.registrosModalTitle; 
+        modalCloseButton.textContent = t.closeButton;
+        modalBody.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        modalInstance.show();
+
+        google.script.run
+          .withSuccessHandler(nombres => {
+            const numRegistros = nombres ? nombres.length : 0;
+            
+            modalTitle.textContent = `${t.registrosModalTitle} (${numRegistros})`;
+            
+            if (numRegistros > 0) {
+              const listaHtml = '<ul class="list-group">' + nombres.map(nombre => `<li class="list-group-item">${nombre}</li>`).join('') + '</ul>';
+              modalBody.innerHTML = listaHtml;
+            } else {
+              modalBody.textContent = t.registrosModalBody;
+            }
+          })
+          .withFailureHandler(error => {
+            console.error("Error al obtener registros:", error);
+            modalTitle.textContent = t.registrosModalTitle;
+            modalBody.innerHTML = `<div class="alert alert-danger" role="alert">${t.errorMessage.replace('{error_message}', error.message)}</div>`;
+          })
+          .obtenerRegistrosPorReserva(nReserva);
+      });
+    });
+  </script>
+</body>
+
+</html>
